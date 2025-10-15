@@ -1,6 +1,9 @@
+import warnings
+
 import shopify
 
 
+# [manually updated 2025/10/15]
 class Limits(object):
     """
     API Calls Limit
@@ -12,6 +15,7 @@ class Limits(object):
     # num_requests_executed/max_requests
     # Eg: 1/40
     CREDIT_LIMIT_HEADER_PARAM = "X-Shopify-Shop-Api-Call-Limit"
+    DEFAULT_STATE = ('39', '40')
 
     @classmethod
     def response(cls):
@@ -25,13 +29,22 @@ class Limits(object):
         _safe_header = getattr(response, "headers", "")
 
         if not _safe_header:
-            raise Exception("No shopify headers found")
+            # raise Exception("No shopify headers found")
+            warnings.warn("No shopify headers found", RuntimeWarning)
+            return cls.DEFAULT_STATE
 
-        if cls.CREDIT_LIMIT_HEADER_PARAM in response.headers:
-            credits = response.headers[cls.CREDIT_LIMIT_HEADER_PARAM]
-            return credits.split("/")
+        if cls.CREDIT_LIMIT_HEADER_PARAM in response.headers or \
+                cls.CREDIT_LIMIT_HEADER_PARAM.lower() in response.headers or \
+                cls.CREDIT_LIMIT_HEADER_PARAM.upper() in response.headers:
+
+            header_credits = response.headers.get(cls.CREDIT_LIMIT_HEADER_PARAM) or \
+                             response.headers.get(cls.CREDIT_LIMIT_HEADER_PARAM.lower()) or \
+                             response.headers.get(cls.CREDIT_LIMIT_HEADER_PARAM.upper())
+            return header_credits.split("/")
         else:
-            raise Exception("No valid api call header found")
+            # raise Exception("No valid api call header found")
+            warnings.warn("No valid api call header found", RuntimeWarning)
+            return cls.DEFAULT_STATE
 
     @classmethod
     def credit_left(cls):
